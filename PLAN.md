@@ -77,3 +77,22 @@ MinGo.Quartz.Platform.UI/
 - OpenAPI 契约变更需与 L3 同步发布；建议 CI 中做契约校验（生成类型 diff）。
 - SSE 连接需处理重复订阅与组件卸载清理。
 - 大数据量表用虚拟滚动或服务端分页（后端已分页）。
+
+---
+
+## 7. 实现状态
+
+| 里程碑 | 状态 | 验收证据 |
+|---|---|---|
+| M1 迁移 + 类型生成打通 | ✅ | 从 Qap.UI 迁移全部源码；`package.json` 重命名为 `mingo-quartz-platform-ui`；`npm run build` 0 错误通过；类型层与 L3 DTO 完全对齐 |
+| M2 观测视图 + 执行历史 | ✅ | `JobDetailPage` 展示 Trigger 列表 + Misfire/并发标记；`ExecutionLogsPage` 使用 L3 `executionLogApi` 分页查询 + 过滤（Job Group/Name/Result） |
+| M3 批量操作 + Activity Feed | ✅ | `JobsPage` 多选 + 批量工具栏（trigger/pause/resume/delete）→ `BatchOperationRequest`；`ActivityFeed` + `useEventStream` 适配 L3 SSE 事件类型（AgentStatusChanged/JobExecuted/SchedulerStatusChanged）+ 15s 轮询降级 |
+| M4 打磨（响应式/搜索/骨架屏） | ✅ | `GlobalSearch` 适配 L3 `AgentDetailDto`；`LoadingSkeleton`/`StatusBadge`/`DataTable` 等基础组件直接复用；Tailwind 响应式布局保持 |
+
+### 实现说明
+- **迁移策略**：从 `MinGo.QuartManager/src/MinGo.Qap.UI` 复制全部源码，适配 L3 API 契约
+- **技术栈**：React 19 + Vite 8 + TypeScript 6 + Tailwind CSS 3 + TanStack Query 5 + TanStack Table 8
+- **类型对齐**：手动维护 `src/types/index.ts`（~430 行），与 L3 全部 DTO 一一对应
+- **API 客户端**：`dashboardApi` / `agentApi` / `schedulerApi` / `jobApi` / `executionLogApi` / `manifestApi` 六个分组
+- **SSE**：`useEventStream` 使用 `EventSource.addEventListener` 处理 L3 命名事件 + 指数退避重连
+- **OpenAPI 生成**：`npm run gen:api` 脚本预留（当前手动维护类型）
