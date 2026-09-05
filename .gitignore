@@ -6,6 +6,10 @@ node_modules/
 dist/
 build/
 
+# generated API client (from openapi)
+src/api/generated/
+openapi/openapi.json
+
 # logs
 npm-debug.log*
 pnpm-debug.log*
