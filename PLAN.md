@@ -94,3 +94,28 @@ MinGo.Quartz.Platform/
 - SSE 需处理连接断开/背压，Channel 有界 + 丢弃策略，避免内存无限增长。
 - 声明式 `JobService` 状态机要保持 Pending/Synced/Failed 一致，Agent 不可达时回退本地备份（现有逻辑保留）。
 - 执行日志量大，建议按 Agent/时间分页 + 归档策略（阶段后期）。
+
+---
+
+## 7. 实现状态（L3 收尾）
+
+| 里程碑 | 状态 | 验收证据 |
+|---|---|---|
+| M1 迁移 + 命名空间对齐 | ✅ | ASP.NET Core Web API 项目搭建完成；引用 `MinGo.Quartz.Agent.Abstractions` 1.0.0；`AgentsController`/`SchedulersController`/`JobsController` 全部端点可用；NSwag Swagger UI 可访问 |
+| M2 ExecutionLog 持久化 + 查询 | ✅ | `ExecutionLog` 实体 + `ExecutionLogs` 表；`ExecutionLogService.IngestLogsAsync` 批量写入；`ExecutionLogsController` 分页查询（按 Job/时间/结果过滤）；单条详情查询 |
+| M3 Activity Feed + 批量操作 | ✅ | `ActivityFeedService`（Channel<ActivityEvent> BoundedCapacity=1024 + DropOldest）；`EventsController` SSE 端点 `/api/events`；`AgentStatusTracker` BackgroundService 定期检测心跳超时；`JobsController.BatchOperation` 批量 trigger/pause/resume/delete |
+| M4 鉴权 + OpenAPI | ✅ | `AgentTokenMiddleware`（SHA256 Token 哈希验证 + ClaimsPrincipal）；NSwag OpenAPI 文档 `/swagger`；CORS 配置 |
+
+### 测试覆盖
+- **29/29 测试全绿**：AgentService 9 项 + SchedulerService 4 项 + ExecutionLogService 5 项 + ActivityFeedService 4 项 + API 集成测试 7 项
+- 单元测试使用 EF Core InMemory 数据库
+- 集成测试使用 `WebApplicationFactory<Program>` + InMemory 数据库
+
+### 实现说明 / 与规划的偏差
+- **TFM**：net10.0（与 L1/L2 一致）
+- **数据库**：PostgreSQL（Npgsql.EntityFrameworkCore.PostgreSQL）；开发/测试阶段使用 InMemory 替代
+- **Agent 代理**：`AgentProxyService` 通过 `IHttpClientFactory` + `X-Scheduler-Name` header 代理到 Agent API
+- **SchedulerInfo ↔ AgentScheduler**：无 EF FK 关系（通过 SchedulerName 字符串关联），查询时手动 Join
+- **鉴权默认关闭**：`AgentTokenMiddleware` 在 Program.cs 中注释掉，需要时取消注释启用
+- **构建脚本**：`scripts/build.ps1` / `scripts/test.ps1`（与 L1/L2 一致风格）
+- **NuGet 源**：`NuGet.config` 配置 L1/L2 artifacts 为本地源
