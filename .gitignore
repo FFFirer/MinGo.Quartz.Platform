@@ -1,0 +1,20 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+artifacts/
+*.nupkg
+
+## Test results
+TestResults/
+*.coverage
+
+## appsettings local overrides
+appsettings.*.local.json
+
+## OS
+.DS_Store
+Thumbs.db
