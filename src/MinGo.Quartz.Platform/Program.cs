@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. 数据库
 builder.Services.AddDbContext<PlatformDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PlatformDb"))
+    options.UseSqlite(builder.Configuration.GetConnectionString("PlatformDb"))
            .AddInterceptors(new UtcAuditInterceptor()));
 
 // 2. 核心服务
@@ -72,18 +72,18 @@ app.UseSwaggerUi();
 
 app.MapControllers();
 
-// 数据库初始化（开发阶段使用 EnsureCreated）
+// 数据库初始化（使用 Migrations 管理 Schema）
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
     try
     {
-        await db.Database.EnsureCreatedAsync();
+        await db.Database.MigrateAsync();
     }
     catch (Exception ex)
     {
         app.Logger.LogWarning(ex,
-            "Database initialization failed. Ensure PostgreSQL is running and connection string is correct.");
+            "Database migration failed. Ensure SQLite connection string is correct.");
     }
 }
 

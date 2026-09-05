@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinGo.Quartz.Platform.Data.Entities;
 
 namespace MinGo.Quartz.Platform.Data;
@@ -31,7 +32,7 @@ public class PlatformDbContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Url).HasMaxLength(512);
             entity.Property(e => e.TokenHash).HasMaxLength(128);
-            entity.HasIndex(e => e.TokenHash).IsUnique().HasFilter("[TokenHash] IS NOT NULL");
+            entity.HasIndex(e => e.TokenHash).IsUnique().HasFilter("TokenHash IS NOT NULL");
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.Status);
         });
@@ -86,5 +87,44 @@ public class PlatformDbContext : DbContext
                 .HasForeignKey(e => e.AgentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // SQLite 不支持 DateTimeOffset 在 ORDER BY 中使用，且 TEXT 存储日期索引效率低。
+        // 全局将 DateTimeOffset / DateTime (UTC) 统一转换为 Unix 毫秒时间戳 (long) 存储：
+        //   • 存储为 INTEGER 列，排序、索引、比较均高效
+        //   • 跨数据库兼容（SQLite / PostgreSQL / MySQL 均原生支持）
+        //   • 与前端 JavaScript Date.now() 一致，简化 API 交换
+        // 假定所有 DateTime 均为 UTC（与 UtcAuditInterceptor 写入行为一致）。
+        var dtoToUnixMs = new ValueConverter<DateTimeOffset, long>(
+            v => v.ToUnixTimeMilliseconds(),
+            v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+
+        var nullableDtoToUnixMs = new ValueConverter<DateTimeOffset?, long?>(
+            v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : default(long?),
+            v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : default(DateTimeOffset?));
+
+        var dtToUnixMs = new ValueConverter<DateTime, long>(
+            v => new DateTimeOffset(DateTime.SpecifyKind(v, DateTimeKind.Utc)).ToUnixTimeMilliseconds(),
+            v => DateTime.UnixEpoch.AddMilliseconds(v));
+
+        var nullableDtToUnixMs = new ValueConverter<DateTime?, long?>(
+            v => v.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)).ToUnixTimeMilliseconds()
+                : default(long?),
+            v => v.HasValue ? DateTime.UnixEpoch.AddMilliseconds(v.Value) : default(DateTime?));
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTimeOffset))
+                    property.SetValueConverter(dtoToUnixMs);
+                else if (property.ClrType == typeof(DateTimeOffset?))
+                    property.SetValueConverter(nullableDtoToUnixMs);
+                else if (property.ClrType == typeof(DateTime))
+                    property.SetValueConverter(dtToUnixMs);
+                else if (property.ClrType == typeof(DateTime?))
+                    property.SetValueConverter(nullableDtToUnixMs);
+            }
+        }
     }
 }
