@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+build/
+
+# generated API client (from openapi)
+src/api/generated/
+openapi/openapi.json
+
+# logs
+npm-debug.log*
+pnpm-debug.log*
+
+# env
+.env
+.env.*
+!.env.example
+!.env.development
+
+# editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
