@@ -66,22 +66,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-if(app.Environment.IsDevelopment())
-{
-    app.UseWebSockets();
-    app.UseViteDevelopmentServer(true);
-}
-
-// 中间件管道
-app.UseCors();
-app.UseOpenApi();
-app.UseSwaggerUi();
-
-// 鉴权中间件（默认关闭，启用后 Agent 请求需要 Token）
-// app.UseMiddleware<AgentTokenMiddleware>();
-
-app.MapControllers();
-
 // 数据库初始化（使用 Migrations 管理 Schema）
 using (var scope = app.Services.CreateScope())
 {
@@ -96,6 +80,22 @@ using (var scope = app.Services.CreateScope())
             "Database migration failed. Ensure SQLite connection string is correct.");
     }
 }
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseWebSockets();
+    app.UseViteDevelopmentServer(true);
+}
+
+// 中间件管道
+app.UseCors();
+app.UseOpenApi();
+app.UseSwaggerUi();
+
+// 鉴权中间件（默认关闭，启用后 Agent 请求需要 Token）
+// app.UseMiddleware<AgentTokenMiddleware>();
+
+app.MapControllers();
 
 app.Run();
 
