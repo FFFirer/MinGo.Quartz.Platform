@@ -118,7 +118,7 @@ MinGo.Quartz.Platform/
 - **SchedulerInfo ↔ AgentScheduler**：无 EF FK 关系（通过 SchedulerName 字符串关联），查询时手动 Join
 - **鉴权默认关闭**：`AgentTokenMiddleware` 在 Program.cs 中注释掉，需要时取消注释启用
 - **构建脚本**：`scripts/build.ps1` / `scripts/test.ps1`（与 L1/L2 一致风格）
-- **NuGet 源**：`NuGet.config` 配置 `../MinGo.Quartz.SDK/artifacts` 为本地源（原 L1/L2 合并为 SDK 仓）
+- **NuGet 源**：`NuGet.config` 仅配置 nuget.org；依赖的 `MinGo.Quartz.*` 包已发布到 nuget.org（原 L1/L2 合并为 SDK 仓）
 
 ---
 

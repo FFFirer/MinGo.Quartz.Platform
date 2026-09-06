@@ -1,0 +1,42 @@
+# 构建上下文 = Platform 仓根目录
+# 目标：仅保留 Dockerfile 需要的文件（ui/ 源码、src/ 源码、NuGet.config、Directory.Build.props）
+
+# .NET 构建产物
+**/bin/
+**/obj/
+**/artifacts/
+TestResults/
+*.nupkg
+
+# 前端依赖与产物（镜像内会重新 npm ci + build）
+ui/node_modules/
+ui/dist/
+ui/.pnpm-store/
+ui/npm-debug.log*
+
+# SQLite 数据库文件
+*.db
+*.db-shm
+*.db-wal
+
+# 版本控制与 CI
+.git/
+.gitignore
+.github/
+.dockerignore
+
+# IDE / 用户配置
+.vs/
+.idea/
+**/*.user
+**/*.suo
+**/*.userprefs
+
+# 文档与规划（与镜像无关）
+README.md
+PLAN.md
+scripts/
+
+# OS
+.DS_Store
+Thumbs.db

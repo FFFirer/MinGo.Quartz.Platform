@@ -1,0 +1,80 @@
+name: Docker Publish
+
+# 构建 MinGo.Quartz.Platform 生产镜像（前端 React+Vite -> wwwroot 静态文件，
+# 后端 ASP.NET Core Web API）并推送到容器镜像仓库（默认 GitHub Container Registry）。
+#
+# 依赖处理：后端引用 MinGo.Quartz.Agent.Abstractions 1.0.0，直接从 nuget.org 还原，
+# 无需检出或打包 SDK 仓。
+#
+# 自定义 registry（在 Platform 仓 Settings -> Secrets and variables -> Actions 配置）：
+#   - 变量 DOCKER_REGISTRY   ：registry 地址（登录主机），默认 ghcr.io（如 docker.io、quay.io、自建 Harbor）
+#   - 变量 DOCKER_IMAGE_NAME ：可选，镜像仓库路径（不含 registry 主机与 tag），默认 <owner>/<repo>；最终镜像 = <REGISTRY>/<IMAGE_NAME>
+#   - 密钥 DOCKER_USERNAME   ：可选，非 ghcr.io 时的登录用户名（默认 github.actor）
+#   - 密钥 DOCKER_PASSWORD   ：可选，非 ghcr.io 时的登录凭据（默认 GITHUB_TOKEN）
+#
+# 首次推送后，可在 registry 的 Package/仓库设置调整镜像可见性。
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  # 容器镜像仓库地址（登录主机），默认 ghcr.io；用仓库变量 DOCKER_REGISTRY 覆盖为自定义 registry
+  REGISTRY: "${{ vars.DOCKER_REGISTRY || 'ghcr.io' }}"
+  # 可选：镜像仓库路径（不含 registry 主机），默认 <owner>/<repo>（小写）；最终镜像 = <REGISTRY>/<IMAGE_NAME>
+  IMAGE_NAME: "${{ vars.DOCKER_IMAGE_NAME || '' }}"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Platform
+        uses: actions/checkout@v4
+
+      - name: Compute image name
+        id: image
+        run: |
+          repo_path="${IMAGE_NAME}"
+          if [ -z "${repo_path}" ]; then
+            repo_path="$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          fi
+          echo "name=${REGISTRY}/${repo_path}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME || github.actor }}
+          password: ${{ secrets.DOCKER_PASSWORD || secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

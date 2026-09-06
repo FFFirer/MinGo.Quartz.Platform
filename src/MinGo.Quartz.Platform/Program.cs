@@ -86,6 +86,12 @@ if (app.Environment.IsDevelopment())
     app.UseWebSockets();
     app.UseViteDevelopmentServer(true);
 }
+else
+{
+    // 生产环境：前端（React + Vite）已构建并输出到 wwwroot，以静态文件形式提供
+    app.UseDefaultFiles();   // "/" -> wwwroot/index.html
+    app.UseStaticFiles();    // /assets/*、favicon 等静态资源
+}
 
 // 中间件管道
 app.UseCors();
@@ -96,6 +102,12 @@ app.UseSwaggerUi();
 // app.UseMiddleware<AgentTokenMiddleware>();
 
 app.MapControllers();
+
+if (!app.Environment.IsDevelopment())
+{
+    // SPA 前端路由回退：BrowserRouter 深链接（如 /agents）刷新时返回 index.html
+    app.MapFallbackToFile("index.html");
+}
 
 app.Run();
 

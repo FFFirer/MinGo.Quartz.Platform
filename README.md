@@ -18,7 +18,7 @@ MinGo.Quartz.Platform/
 ├── scripts/
 ├── MinGo.Quartz.Platform.slnx
 ├── Directory.Build.props
-├── NuGet.config                     # 引用 ../MinGo.Quartz.SDK/artifacts 本地源
+├── NuGet.config                     # 仅配置 nuget.org 源
 ├── README.md
 └── PLAN.md
 ```
@@ -48,7 +48,7 @@ SQLite（`mingo_quartz_platform.db`），EF Core 10 + Unix 毫秒时间戳存储
 .\scripts\test.ps1      # 运行 29 项测试
 ```
 
-> NuGet 源：`NuGet.config` 配置 `../MinGo.Quartz.SDK/artifacts` 为本地源，需先构建 SDK 仓生成 .nupkg。
+> NuGet 源：`NuGet.config` 仅配置 nuget.org；依赖的 `MinGo.Quartz.Agent.Abstractions` `1.0.0` 已发布到 nuget.org，直接还原即可。
 
 ## L4 前端（ui/）
 
@@ -80,6 +80,45 @@ npm run gen:api         # 从 L3 /swagger/v1/swagger.json 生成 TS 客户端
 ```
 
 > 前提：L3 后端运行在 `http://localhost:5000`。启动命令：`cd ../src/MinGo.Quartz.Platform && dotnet run`
+
+## 容器化部署（Docker）
+
+生产镜像将 **前端构建产物放入 `wwwroot`，以静态文件形式提供**（同源访问，无需单独的 Web 服务器），后端以 ASP.NET Core 提供 API + SPA 路由回退。
+
+镜像为多阶段构建（`Dockerfile`，构建上下文 = 本仓根目录）：
+
+1. `node:22-alpine` — `npm ci && npm run build`，产出 `ui/dist`；
+2. `dotnet/sdk:10.0` — 还原并发布后端；
+3. `dotnet/aspnet:10.0` — 拷贝发布产物 + 将 `ui/dist` 放入 `wwwroot`，以非 root 用户运行，监听 `8080`。
+
+> **依赖说明**：后端引用 `MinGo.Quartz.Agent.Abstractions` `1.0.0`，直接从 nuget.org 还原（镜像构建时 COPY 仓内 `NuGet.config`，无需本地包源）。
+
+### 本地构建与运行
+
+```powershell
+# 1. 构建镜像
+docker build -t mingo-quartz-platform .
+
+# 2. 运行（挂载 /data 卷以持久化 SQLite）
+docker run --rm -p 8080:8080 -v mingo-quartz-data:/data mingo-quartz-platform
+```
+
+访问 `http://localhost:8080` 即为前端控制台，`/api/*` 为后端接口，`/swagger` 为 OpenAPI UI。
+
+### CI 发布
+
+`.github/workflows/docker-publish.yml` 在推送 `v*` 标签或手动触发时：构建镜像（.NET 依赖从 nuget.org 还原）→ 推送到容器镜像仓库（默认 GitHub Container Registry：`ghcr.io/fffirer/mingo.quartz.platform`，标签含语义化版本与 `latest`）。
+
+**自定义 registry**（在 Platform 仓 Settings -> Secrets and variables -> Actions 配置）：
+
+| 类型 | 名称 | 说明 |
+|---|---|---|
+| 变量 | `DOCKER_REGISTRY` | registry 地址（登录主机），默认 `ghcr.io`（如 `docker.io`、`quay.io`、自建 Harbor） |
+| 变量 | `DOCKER_IMAGE_NAME` | 可选，镜像仓库路径（不含 registry 主机与 tag），默认 `<owner>/<repo>`；最终镜像 = `<REGISTRY>/<IMAGE_NAME>`（适用于命名空间结构不同的场景，如 Harbor 项目） |
+| 密钥 | `DOCKER_USERNAME` | 可选，非 ghcr.io 时的登录用户名（默认 `github.actor`） |
+| 密钥 | `DOCKER_PASSWORD` | 可选，非 ghcr.io 时的登录凭据（默认 `GITHUB_TOKEN`） |
+
+> 例：推送到 Docker Hub 设 `DOCKER_REGISTRY=docker.io` 并提供 `DOCKER_USERNAME`/`DOCKER_PASSWORD`（→ `docker.io/fffirer/mingo.quartz.platform`）；推送到自建 Harbor 设 `DOCKER_REGISTRY=harbor.mycorp.com` + `DOCKER_IMAGE_NAME=quartz/platform`（→ `harbor.mycorp.com/quartz/platform`）。
 
 ## 里程碑状态
 
