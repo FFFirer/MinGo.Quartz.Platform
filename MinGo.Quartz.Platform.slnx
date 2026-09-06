@@ -1,0 +1,6 @@
+<Solution>
+  <Configuration Name="Debug" Platform="Any CPU" />
+  <Configuration Name="Release" Platform="Any CPU" />
+  <Project Path="src/MinGo.Quartz.Platform/MinGo.Quartz.Platform.csproj" />
+  <Project Path="tests/MinGo.Quartz.Platform.Tests/MinGo.Quartz.Platform.Tests.csproj" />
+</Solution>

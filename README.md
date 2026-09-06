@@ -16,7 +16,7 @@ MinGo.Quartz.Platform/
 │   ├── vite.config.ts
 │   └── ...
 ├── scripts/
-├── MinGo.Quartz.Platform.sln
+├── MinGo.Quartz.Platform.slnx
 ├── Directory.Build.props
 ├── NuGet.config                     # 引用 ../MinGo.Quartz.SDK/artifacts 本地源
 ├── README.md
