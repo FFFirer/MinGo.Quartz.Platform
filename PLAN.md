@@ -118,4 +118,27 @@ MinGo.Quartz.Platform/
 - **SchedulerInfo ↔ AgentScheduler**：无 EF FK 关系（通过 SchedulerName 字符串关联），查询时手动 Join
 - **鉴权默认关闭**：`AgentTokenMiddleware` 在 Program.cs 中注释掉，需要时取消注释启用
 - **构建脚本**：`scripts/build.ps1` / `scripts/test.ps1`（与 L1/L2 一致风格）
-- **NuGet 源**：`NuGet.config` 配置 L1/L2 artifacts 为本地源
+- **NuGet 源**：`NuGet.config` 配置 `../MinGo.Quartz.SDK/artifacts` 为本地源（原 L1/L2 合并为 SDK 仓）
+
+---
+
+## 8. L4 UI 合并说明
+
+本仓于 2026-09 合入原 **L4 `MinGo.Quartz.Platform.UI`**（React + Vite + TypeScript 前端）作为 `ui/` 子目录：
+
+- 使用 `git subtree` 保留 L4 完整提交历史
+- `ui/` 目录包含原 Platform.UI 仓全部内容（src/、package.json、vite.config.ts、tsconfig*.json、tailwind.config.js 等）
+- L4 PLAN 保留于 `ui/PLAN.md`
+- `ui/scripts/gen-api.js` 启动命令路径更新为 `cd ../src/MinGo.Quartz.Platform && dotnet run`
+- 前后端契约：L4 通过 L3 `/swagger/v1/swagger.json` 生成 TS 类型（`npm run gen:api`）
+
+### L4 实现状态（收尾）
+
+| 里程碑 | 状态 | 验收证据 |
+|---|---|---|
+| M1 迁移 + 类型生成打通 | ✅ | 从 Qap.UI 迁移全部源码；`package.json` 重命名为 `mingo-quartz-platform-ui`；`npm run build` 0 错误通过；类型层与 L3 DTO 完全对齐 |
+| M2 观测视图 + 执行历史 | ✅ | `JobDetailPage` 展示 Trigger 列表 + Misfire/并发标记；`ExecutionLogsPage` 使用 L3 `executionLogApi` 分页查询 + 过滤 |
+| M3 批量操作 + Activity Feed | ✅ | `JobsPage` 多选 + 批量工具栏；`ActivityFeed` + `useEventStream` 适配 L3 SSE 事件类型 + 15s 轮询降级 |
+| M4 打磨（响应式/搜索/骨架屏） | ✅ | `GlobalSearch` 适配 L3 `AgentDetailDto`；`LoadingSkeleton`/`StatusBadge`/`DataTable` 等基础组件复用 |
+
+详细 L4 规划见 `ui/PLAN.md`。

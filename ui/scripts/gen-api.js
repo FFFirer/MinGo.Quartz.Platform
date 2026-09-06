@@ -67,7 +67,7 @@ async function main() {
     console.error('\n❌ Failed to generate API client:');
     console.error(error.message);
     console.error('\n💡 确保 L3 后端运行在 http://localhost:5000');
-    console.error('   启动命令: cd MinGo.Quartz.Platform && dotnet run');
+    console.error('   启动命令: cd ../src/MinGo.Quartz.Platform && dotnet run');
     process.exit(1);
   }
 }
