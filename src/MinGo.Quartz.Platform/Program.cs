@@ -5,8 +5,12 @@ using MinGo.Quartz.Platform.Auth;
 using MinGo.Quartz.Platform.Data;
 using MinGo.Quartz.Platform.Services;
 using NSwag.Generation.AspNetCore;
+using Vite.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddViteServices(builder.Configuration.GetSection(ViteOptions.Vite).Bind);
+// builder.Services.AddViteServices();
 
 // 1. 数据库
 builder.Services.AddDbContext<PlatformDbContext>(options =>
@@ -61,6 +65,12 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if(app.Environment.IsDevelopment())
+{
+    app.UseWebSockets();
+    app.UseViteDevelopmentServer(true);
+}
 
 // 中间件管道
 app.UseCors();
