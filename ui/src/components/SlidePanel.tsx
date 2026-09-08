@@ -41,7 +41,7 @@ const SlidePanel: React.FC<SlidePanelProps> = ({ isOpen, onClose, title, childre
 
       {/* Panel */}
       <aside
-        className={`pointer-events-auto fixed top-0 right-0 h-full ${width} bg-slate-800 text-slate-50 shadow-xl transform transition-transform duration-300 z-50
+        className={`pointer-events-auto fixed top-0 right-0 h-full ${width} max-w-full bg-slate-800 text-slate-50 shadow-xl transform transition-transform duration-300 z-50 flex flex-col
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
         aria-label={title}
@@ -56,7 +56,7 @@ const SlidePanel: React.FC<SlidePanelProps> = ({ isOpen, onClose, title, childre
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto flex-1 p-4">{children}</div>
+        <div className="overflow-y-auto flex-1 min-h-0 p-4">{children}</div>
 
         {/* Footer (optional) */}
         {footer && <div className="border-t border-slate-700 p-4">{footer}</div>}

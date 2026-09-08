@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { FileText } from 'lucide-react';
 import { agentApi } from '../api';
-import type { AgentDetailDto, AgentSchedulerDto, ApiResponse } from '../types';
+import type { AgentDetailDto, AgentSchedulerDto } from '../types';
 import DataTable from '../components/DataTable';
 import StatusBadge from '../components/StatusBadge';
+import ManifestPanel from '../components/ManifestPanel';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import PageHeader from '../components/PageHeader';
 
 export const AgentDetailPage: React.FC = () => {
   const { agentId } = useParams<{ agentId: string }>();
   const navigate = useNavigate();
+  const [manifestScheduler, setManifestScheduler] = useState<string | null>(null);
 
   const { data: apiResp, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['agent', agentId],
@@ -105,6 +108,23 @@ export const AgentDetailPage: React.FC = () => {
             { header: 'Status', accessor: (row: AgentSchedulerDto) => row.status },
             { header: 'Clustered', accessor: (row: AgentSchedulerDto) => row.isClustered ? 'Yes' : 'No' },
             { header: 'Reported At', accessor: (row: AgentSchedulerDto) => formatDate(row.reportedAt) },
+            {
+              header: 'Manifest',
+              align: 'right',
+              accessor: (row: AgentSchedulerDto) => (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setManifestScheduler(row.schedulerName);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
+                  title={`View job manifest for ${row.schedulerName}`}
+                >
+                  <FileText size={13} />
+                  Manifest
+                </button>
+              ),
+            },
           ]}
           data={agent?.schedulers ?? []}
           onRowClick={(row) => navigate(`/schedulers/${encodeURIComponent(row.schedulerName)}`)}
@@ -112,6 +132,12 @@ export const AgentDetailPage: React.FC = () => {
           showBorder={false}
         />
       </div>
+
+      {/* Job Manifest slide-in panel (per scheduler) */}
+      <ManifestPanel
+        schedulerName={manifestScheduler}
+        onClose={() => setManifestScheduler(null)}
+      />
     </div>
   );
 };
