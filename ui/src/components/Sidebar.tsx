@@ -47,7 +47,7 @@ export default function Sidebar() {
         {!collapsed ? (
           <>
             <Activity size={24} className="text-blue-500 shrink-0" />
-            <span className="font-bold text-lg text-slate-50 truncate">MinGo.Qap</span>
+            <span className="font-bold text-lg text-slate-50 truncate">Quartz Platform</span>
           </>
         ) : (
           <Activity size={24} className="text-blue-500 mx-auto" />
