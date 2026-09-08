@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { schedulerApi } from '../api';
 import StatusBadge from '../components/StatusBadge';
 import PageHeader from '../components/PageHeader';
 import DataTable from '../components/DataTable';
-import { AlertCircle } from 'lucide-react';
+import ManifestPanel from '../components/ManifestPanel';
+import { AlertCircle, FileText } from 'lucide-react';
 import type { SchedulerSummaryDto, ApiResponse } from '../types';
 import { useNavigate, Link } from 'react-router-dom';
 
 const SchedulersPage: React.FC = () => {
   const navigate = useNavigate();
+  const [manifestScheduler, setManifestScheduler] = useState<string | null>(null);
   const { data, isLoading, isError, error, refetch } = useQuery<ApiResponse<SchedulerSummaryDto[]>, Error>({
     queryKey: ['schedulers'],
     queryFn: () => schedulerApi.getAll(),
@@ -83,9 +85,32 @@ const SchedulersPage: React.FC = () => {
               accessor: 'runningSince',
               format: (v: string | undefined) => formatDate(v),
             },
+            {
+              header: 'Manifest',
+              align: 'right',
+              accessor: (row: SchedulerSummaryDto) => (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setManifestScheduler(row.schedulerName);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
+                  title={`View job manifest for ${row.schedulerName}`}
+                >
+                  <FileText size={13} />
+                  Manifest
+                </button>
+              ),
+            },
           ] as any}
         />
       </div>
+
+      {/* Job Manifest slide-in panel (per scheduler) */}
+      <ManifestPanel
+        schedulerName={manifestScheduler}
+        onClose={() => setManifestScheduler(null)}
+      />
     </div>
   );
 };
