@@ -174,7 +174,7 @@ const JobDetailPage: React.FC = () => {
   })();
 
   // Get parameter definitions for this job type from manifest (match by FullName)
-  const paramDefinitions = manifest?.jobs?.find(j => j.jobTypeQualifiedName === job.jobType?.fullName)?.parameters;
+  const paramDefinitions = manifest?.jobs?.find(j => j.jobTypeQualifiedName?.fullName === job.jobType?.fullName)?.parameters;
 
   const triggerStateColor = (state: string) => {
     switch (state) {

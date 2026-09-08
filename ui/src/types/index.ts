@@ -323,7 +323,7 @@ export interface ParameterInfoDto {
 
 export interface JobTypeInfoDto {
   key: string;
-  jobTypeQualifiedName: string;
+  jobTypeQualifiedName: JobTypeQualifiedName;
   description: string;
   parameters: ParameterInfoDto[];
 }

@@ -134,7 +134,7 @@ const CreateJobPage: React.FC = () => {
 
       // Try to match job type
       const matchingType = manifest?.jobs?.find(
-        (j: JobTypeInfoDto) => j.jobTypeQualifiedName === copySource.jobType?.fullName
+        (j: JobTypeInfoDto) => j.jobTypeQualifiedName?.fullName === copySource.jobType?.fullName
       );
       if (matchingType) {
         setSelectedJobType(matchingType.key);
@@ -320,7 +320,7 @@ const CreateJobPage: React.FC = () => {
 
     const request: CreateJobRequest = {
       jobKey: jobKey,
-      jobType: { fullName: selectedJob?.jobTypeQualifiedName ?? selectedJobType, assembly: '' },
+      jobType: selectedJob?.jobTypeQualifiedName ?? { fullName: selectedJobType, assembly: '' },
       params,
       schedule,
       options,
@@ -463,15 +463,15 @@ const CreateJobPage: React.FC = () => {
                     <Check size={11} className="text-white" />
                   </div>
                   <div className="font-semibold text-slate-50 truncate pr-8 leading-tight" title={(() => {
-                    return selectedJob.jobTypeQualifiedName?.split('.').pop() ?? selectedJob.key;
+                    return selectedJob.jobTypeQualifiedName?.fullName?.split('.').pop() ?? selectedJob.key;
                   })()}>
                     {(() => {
-                      return selectedJob.jobTypeQualifiedName?.split('.').pop() ?? selectedJob.key;
+                      return selectedJob.jobTypeQualifiedName?.fullName?.split('.').pop() ?? selectedJob.key;
                     })()}
                   </div>
                   <div className="mt-1 truncate">
                     <JobTypeDisplay
-                      jobType={{ fullName: selectedJob.jobTypeQualifiedName ?? selectedJob.key, assembly: '' }}
+                      jobType={selectedJob.jobTypeQualifiedName ?? { fullName: selectedJob.key, assembly: '' }}
                       size="sm"
                       showCopy={false}
                     />
@@ -509,7 +509,7 @@ const CreateJobPage: React.FC = () => {
                 <div className="max-h-[340px] overflow-y-auto space-y-1 p-2">
                   {manifest.jobs.map((job: JobTypeInfoDto) => {
                     const isSelected = selectedJobType === job.key;
-                    const shortName = job.jobTypeQualifiedName?.split('.').pop() ?? job.key;
+                    const shortName = job.jobTypeQualifiedName?.fullName?.split('.').pop() ?? job.key;
                     return (
                       <div
                         key={job.key}
@@ -530,7 +530,7 @@ const CreateJobPage: React.FC = () => {
                         </div>
                         <div className="mt-1 truncate">
                           <JobTypeDisplay
-                            jobType={{ fullName: job.jobTypeQualifiedName ?? job.key, assembly: '' }}
+                            jobType={job.jobTypeQualifiedName ?? { fullName: job.key, assembly: '' }}
                             size="sm"
                             showCopy={false}
                           />
