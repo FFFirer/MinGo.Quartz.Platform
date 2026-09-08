@@ -51,6 +51,16 @@ public class AgentService
             existing.StartedAt = request.StartedAt != default ? request.StartedAt : DateTimeOffset.UtcNow;
             existing.UpdatedAt = DateTimeOffset.UtcNow;
 
+            // 同步 Agent 上报的最新地址与名称（URL 可能因 ExternalUrl 变更、DHCP/容器 IP 变化而改变）
+            if (!string.IsNullOrWhiteSpace(request.Url))
+            {
+                existing.Url = request.Url;
+            }
+            if (!string.IsNullOrWhiteSpace(request.Name))
+            {
+                existing.Name = request.Name;
+            }
+
             await _db.SaveChangesAsync(ct);
 
             _logger.LogInformation("Agent reconnected: {AgentId} ({Name})", existing.Id, existing.Name);

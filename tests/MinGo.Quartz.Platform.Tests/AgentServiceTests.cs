@@ -106,6 +106,87 @@ public class AgentServiceTests
     }
 
     [Fact]
+    public async Task Register_ReconnectWithChangedUrl_UpdatesStoredUrl()
+    {
+        using var db = CreateDbContext();
+        var service = CreateService(db);
+
+        var response1 = await service.RegisterAsync(new RegisterAgentRequest
+        {
+            Name = "test-agent",
+            Url = "http://localhost:5000"
+        });
+
+        // 携带同一 AgentId 重连，但上报的 URL 已变化（如 ExternalUrl 修改、DHCP/容器 IP 变动）
+        var reconnectRequest = new RegisterAgentRequest
+        {
+            AgentId = response1.AgentId,
+            Name = "test-agent",
+            Url = "http://10.0.0.42:5000"
+        };
+
+        var response2 = await service.RegisterAsync(reconnectRequest);
+
+        Assert.Equal(response1.AgentId, response2.AgentId);
+
+        var agent = await db.Agents.FirstAsync();
+        Assert.Equal("http://10.0.0.42:5000", agent.Url);
+        // 仍然只有一个 Agent 记录
+        Assert.Equal(1, await db.Agents.CountAsync());
+    }
+
+    [Fact]
+    public async Task Register_ReconnectWithChangedName_UpdatesStoredName()
+    {
+        using var db = CreateDbContext();
+        var service = CreateService(db);
+
+        var response1 = await service.RegisterAsync(new RegisterAgentRequest
+        {
+            Name = "old-name",
+            Url = "http://localhost:5000"
+        });
+
+        var reconnectRequest = new RegisterAgentRequest
+        {
+            AgentId = response1.AgentId,
+            Name = "new-name",
+            Url = "http://localhost:5000"
+        };
+
+        await service.RegisterAsync(reconnectRequest);
+
+        var agent = await db.Agents.FirstAsync();
+        Assert.Equal("new-name", agent.Name);
+    }
+
+    [Fact]
+    public async Task Register_ReconnectWithEmptyUrl_KeepsExistingUrl()
+    {
+        using var db = CreateDbContext();
+        var service = CreateService(db);
+
+        var response1 = await service.RegisterAsync(new RegisterAgentRequest
+        {
+            Name = "test-agent",
+            Url = "http://localhost:5000"
+        });
+
+        // 上报空 URL 时不应清空已记录地址
+        var reconnectRequest = new RegisterAgentRequest
+        {
+            AgentId = response1.AgentId,
+            Name = "test-agent",
+            Url = string.Empty
+        };
+
+        await service.RegisterAsync(reconnectRequest);
+
+        var agent = await db.Agents.FirstAsync();
+        Assert.Equal("http://localhost:5000", agent.Url);
+    }
+
+    [Fact]
     public async Task Heartbeat_UpdatesLastHeartbeat()
     {
         using var db = CreateDbContext();
